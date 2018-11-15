@@ -1,0 +1,112 @@
+What are the three longest trips on rainy days?
+
+WITH
+	raindates
+AS(
+	SELECT
+		DATE(date)
+	FROM
+		weather
+	WHERE
+		events='Rain'
+	GROUP BY 1
+	)
+SELECT
+	DATE(trips.start_date),
+	trips.duration
+FROM
+	trips
+JOIN
+	raindates
+ON
+	raindates.date=DATE(trips.start_date)
+ORDER BY
+	duration DESC
+LIMIT
+	3;
+
+Which station is full most often?
+ WITH
+	fullcount
+AS(
+	SELECT 
+		COUNT(docks_available),
+		station_id
+	FROM
+		status
+	WHERE
+		docks_available=0
+	GROUP BY
+		station_id)
+SELECT
+	fullcount.count,
+	stations.name
+FROM
+	fullcount
+JOIN
+	stations
+ON
+	fullcount.station_id=stations.station_id
+ORDER BY
+	count DESC
+LIMIT
+	1;
+
+Return a list of stations with a count of number of trips starting at that station but ordered by dock count.
+  WITH
+	tripsstations
+AS (
+	SELECT
+		stations.name,
+		stations.dockcount,
+		trips.start_station,
+		trips.trip_id
+	FROM
+		stations
+	JOIN
+		trips
+	ON
+		trips.start_station LIKE stations.name)
+SELECT
+	COUNT(trip_id),
+	name,
+	dockcount
+FROM
+	tripsstations
+GROUP BY
+	name, dockcount
+ORDER BY
+	dockcount DESC
+  
+(Challenge) What's the length of the longest trip for each day it rains anywhere?  
+  WITH
+	longtrip
+AS(
+	SELECT
+		start_date,
+		zip_code,
+		MAX(duration)
+	FROM
+		trips
+	GROUP BY
+		1,2)
+SELECT
+	DATE(longtrip.start_date),
+	longtrip.zip_code,
+	MAX(longtrip.max),
+	weather.zip,
+	weather.events,
+	DATE(weather.date)
+FROM
+	longtrip
+JOIN
+	weather
+ON
+	DATE(longtrip.start_date)=DATE(weather.date)
+	AND
+	longtrip.zip_code=weather.zip
+WHERE
+	events='Rain'
+GROUP BY
+	1,2,4,5,6;
+
